@@ -21,7 +21,8 @@ export default function Room() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [copied, setCopied] = useState(false);
   
-  const secretKey = window.location.hash.substring(1);
+  const queryKey = new URLSearchParams(window.location.search).get('key');
+  const secretKey = window.location.hash.substring(1) || queryKey || '';
 
   const isSender = !!location.state?.file;
   const file = location.state?.file;
@@ -123,6 +124,12 @@ export default function Room() {
     
     return () => clearInterval(interval);
   }, [status, progress]);
+
+  useEffect(() => {
+    if (!window.location.hash && queryKey) {
+      window.history.replaceState(null, '', `${window.location.pathname}#${queryKey}`);
+    }
+  }, [queryKey]);
 
   // Main WebRTC / signaling bridge setup
   useEffect(() => {
@@ -492,7 +499,7 @@ export default function Room() {
     return [step1, step2, step3, step4, step5, step6];
   };
 
-  const shareableLink = `${window.location.origin}/room/${roomId}${window.location.hash}`;
+  const shareableLink = `${window.location.origin}/room/${roomId}?key=${encodeURIComponent(secretKey)}`;
 
   const currentFileName = isSender ? (file ? file.name : '') : (fileMetaRef.current ? fileMetaRef.current.name : '');
   const currentFileSize = isSender ? (file ? file.size : 0) : (fileMetaRef.current ? fileMetaRef.current.size : 0);
