@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --space-bg: #09090e;
+    --neon-cyan: #06b6d4;
+    --neon-purple: #8b5cf6;
+    --neon-pink: #ec4899;
+  }
+
+  body {
+    background-color: var(--space-bg);
+    color: #f3f4f6;
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(at 10% 20%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+      radial-gradient(at 90% 80%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(236, 72, 153, 0.03) 0px, transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+/* Cosmic Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), inset 0 0 15px rgba(6, 182, 212, 0.05);
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.3), inset 0 0 25px rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+}
+
+@keyframes orbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulseSignal {
+  0%, 100% { opacity: 0.3; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(15, 15, 26, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(20, 20, 35, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Portal Dropzone */
+.portal-zone {
+  position: relative;
+  overflow: hidden;
+  animation: pulseGlow 4s infinite ease-in-out;
+}
+
+.portal-ring-1 {
+  position: absolute;
+  border: 1px dashed rgba(6, 182, 212, 0.15);
+  border-radius: 50%;
+  animation: orbit 30s linear infinite;
+}
+
+.portal-ring-2 {
+  position: absolute;
+  border: 1px dashed rgba(139, 92, 246, 0.15);
+  border-radius: 50%;
+  animation: orbit 45s linear infinite reverse;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(9, 9, 14, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Custom Utilities */
+.text-neon-cyan {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+.text-neon-purple {
+  color: var(--neon-purple);
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.text-neon-pink {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+
+.bg-neon-gradient {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+}
+
+.bg-neon-gradient-hover {
+  transition: all 0.3s ease;
+}
+
+.bg-neon-gradient-hover:hover {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  filter: brightness(1.1);
+}
+
+.orbitron {
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+}
