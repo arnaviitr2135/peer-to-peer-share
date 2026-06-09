@@ -6,7 +6,7 @@ import { generateChunkHash, encryptData, decryptData } from '../utils/crypto';
 // Dynamically target local development socket or production Render socket
 const SOCKET_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000'
-  : 'https://mars-p2p-share.onrender.com';
+  : 'https://peer-to-peer-share.onrender.com';
 
 const socket = io(SOCKET_URL);
 
