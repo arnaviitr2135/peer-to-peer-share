@@ -25,9 +25,6 @@ export default function Room() {
 
   const isSender = !!location.state?.file;
   const file = location.state?.file;
-  const historyEntry = JSON.parse(localStorage.getItem('nebula_transfer_history') || '[]')
-    .find(item => item.link === `${window.location.pathname}${window.location.hash}`);
-  const isLostSenderSession = !isSender && historyEntry?.role === 'sender';
 
   const peerConnectionRef = useRef(null);
   const dataChannelRef = useRef(null);
@@ -114,7 +111,7 @@ export default function Room() {
   // Clock elapsed transmission duration
   useEffect(() => {
     let interval;
-    const activeStates = ['Encrypting', 'Receiving', 'Connected securely'];
+    const activeStates = ['Encrypting', 'Receiving', 'Connected securely', 'Payload sent'];
     const isTransferActive = activeStates.some(s => status.includes(s));
     
     if (isTransferActive && progress < 100) {
@@ -138,14 +135,6 @@ export default function Room() {
         socket.emit('ice-candidate', { target: roomId, candidate: event.candidate });
       }
     };
-
-    if (isLostSenderSession) {
-      setStatus('Sender session lost. Return to base and select the file again.');
-      return () => {
-        pc.close();
-        socket.off();
-      };
-    }
 
     if (isSender) {
       socket.emit('create-room', roomId);
@@ -200,7 +189,7 @@ export default function Room() {
       pc.close();
       socket.off();
     };
-  }, [roomId, isSender, isLostSenderSession]);
+  }, [roomId, isSender]);
 
   const setupDataChannel = (dc) => {
     dc.binaryType = 'arraybuffer';
@@ -213,7 +202,21 @@ export default function Room() {
     dc.onmessage = async (e) => {
       if (typeof e.data === 'string') {
         const msg = JSON.parse(e.data);
-        if (msg.type === 'metadata') {
+        if (msg.type === 'progress' && isSender) {
+          const percent = Math.round((msg.receivedSize / file.size) * 100);
+          setProgress(percent);
+
+          const elapsedSeconds = Math.max((Date.now() - startTimeRef.current) / 1000, 0.001);
+          const currentSpeedMBps = (msg.receivedSize / (1024 * 1024)) / elapsedSeconds;
+          setSpeed(currentSpeedMBps.toFixed(2));
+        } else if (msg.type === 'complete' && isSender) {
+          setProgress(100);
+          playSuccessChime();
+          setStatus('Transfer Complete! Safe & Verified.');
+        } else if (msg.type === 'error' && isSender) {
+          playErrorBeep();
+          setStatus(msg.message || 'Receiver reported a transfer error.');
+        } else if (msg.type === 'metadata') {
           fileMetaRef.current = msg;
           setStatus(`Receiving (Encrypted): ${msg.name}`);
           startTimeRef.current = Date.now(); 
@@ -225,6 +228,7 @@ export default function Room() {
           const decryptedChunk = await decryptData(e.data, secretKey);
           receivedBuffersRef.current.push(decryptedChunk);
           receivedSizeRef.current += decryptedChunk.byteLength;
+          dc.send(JSON.stringify({ type: 'progress', receivedSize: receivedSizeRef.current }));
           
           const percent = Math.round((receivedSizeRef.current / fileMetaRef.current.size) * 100);
           setProgress(percent);
@@ -272,17 +276,10 @@ export default function Room() {
         
         dc.send(encryptedChunk);
         offset += chunk.byteLength;
-        
-        setProgress(Math.round((offset / file.size) * 100));
-
-        const elapsedSeconds = Math.max((Date.now() - startTimeRef.current) / 1000, 0.001);
-        const currentSpeedMBps = (offset / (1024 * 1024)) / elapsedSeconds;
-        setSpeed(currentSpeedMBps.toFixed(2));
       }
       
       dc.send(JSON.stringify({ type: 'eof' }));
-      playSuccessChime();
-      setStatus('Transfer Complete! Safe & Verified.');
+      setStatus('Payload sent. Awaiting receiver verification...');
     };
 
     sendChunk();
@@ -313,9 +310,14 @@ export default function Room() {
         'receiver'
       );
 
+      dataChannelRef.current?.send(JSON.stringify({ type: 'complete' }));
       setStatus('Transmission success! Verified & Saved.');
     } else {
       playErrorBeep();
+      dataChannelRef.current?.send(JSON.stringify({
+        type: 'error',
+        message: 'Receiver checksum mismatch. Data corrupt.'
+      }));
       setStatus('Error: Cryptographic checksum mismatch! Data corrupt.');
     }
   };
@@ -447,7 +449,7 @@ export default function Room() {
     };
 
     let step5Status = "pending";
-    if (status.includes("Encrypting") || status.includes("Receiving")) {
+    if (status.includes("Encrypting") || status.includes("Receiving") || status.includes("Payload sent")) {
       step5Status = "active";
     } else if (status.includes("Complete") || status.includes("Verifying") || status.includes("Verified") || status.includes("Success")) {
       step5Status = "complete";
@@ -567,17 +569,6 @@ export default function Room() {
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {isLostSenderSession && (
-            <div className="p-5 bg-amber-950/20 rounded-2xl border border-amber-500/20 text-left">
-              <p className="text-amber-300 text-xs font-mono uppercase tracking-widest font-bold mb-2">
-                Sender file access expired
-              </p>
-              <p className="text-gray-400 text-xs leading-relaxed font-mono">
-                This room was opened from a saved sender link, but the browser no longer has permission to read the original local file. Return to base, select the file again, and generate a fresh link.
-              </p>
             </div>
           )}
 
