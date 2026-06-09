@@ -5,6 +5,12 @@
 
 ---
 
+## Live Demo
+
+Frontend: [https://peer-to-peer-share-glhbve2i7-arnav-saini-s-projects.vercel.app/](https://peer-to-peer-share-glhbve2i7-arnav-saini-s-projects.vercel.app/)
+
+---
+
 ## Features
 
 | Feature | Description |
@@ -109,6 +115,8 @@ npm run dev
 ---
 
 ## Deployment
+
+Live frontend: [https://peer-to-peer-share-glhbve2i7-arnav-saini-s-projects.vercel.app/](https://peer-to-peer-share-glhbve2i7-arnav-saini-s-projects.vercel.app/)
 
 ### Server → Render
 - Root directory: `server`
