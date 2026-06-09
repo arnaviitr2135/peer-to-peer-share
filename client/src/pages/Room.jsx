@@ -25,9 +25,6 @@ export default function Room() {
 
   const isSender = !!location.state?.file;
   const file = location.state?.file;
-  const historyEntry = JSON.parse(localStorage.getItem('nebula_transfer_history') || '[]')
-    .find(item => item.link === `${window.location.pathname}${window.location.hash}`);
-  const isLostSenderSession = !isSender && historyEntry?.role === 'sender';
 
   const peerConnectionRef = useRef(null);
   const dataChannelRef = useRef(null);
@@ -139,14 +136,6 @@ export default function Room() {
       }
     };
 
-    if (isLostSenderSession) {
-      setStatus('Sender session lost. Return to base and select the file again.');
-      return () => {
-        pc.close();
-        socket.off();
-      };
-    }
-
     if (isSender) {
       socket.emit('create-room', roomId);
       setStatus('Waiting for receiver node to bind...');
@@ -200,7 +189,7 @@ export default function Room() {
       pc.close();
       socket.off();
     };
-  }, [roomId, isSender, isLostSenderSession]);
+  }, [roomId, isSender]);
 
   const setupDataChannel = (dc) => {
     dc.binaryType = 'arraybuffer';
@@ -567,17 +556,6 @@ export default function Room() {
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {isLostSenderSession && (
-            <div className="p-5 bg-amber-950/20 rounded-2xl border border-amber-500/20 text-left">
-              <p className="text-amber-300 text-xs font-mono uppercase tracking-widest font-bold mb-2">
-                Sender file access expired
-              </p>
-              <p className="text-gray-400 text-xs leading-relaxed font-mono">
-                This room was opened from a saved sender link, but the browser no longer has permission to read the original local file. Return to base, select the file again, and generate a fresh link.
-              </p>
             </div>
           )}
 
