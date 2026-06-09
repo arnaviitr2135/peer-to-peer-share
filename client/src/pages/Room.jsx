@@ -32,6 +32,7 @@ export default function Room() {
   const receivedSizeRef = useRef(0);
   const fileMetaRef = useRef(null);
   const startTimeRef = useRef(null);
+  const transferFailedRef = useRef(false);
 
   // Audio Synthesizer: Play futuristic success chime
   const playSuccessChime = () => {
@@ -207,7 +208,7 @@ export default function Room() {
           setStatus(`Receiving (Encrypted): ${msg.name}`);
           startTimeRef.current = Date.now(); 
         } else if (msg.type === 'eof') {
-          finalizeDownload();
+          if (!transferFailedRef.current) finalizeDownload();
         }
       } else {
         try {
@@ -222,6 +223,7 @@ export default function Room() {
           const currentSpeedMBps = (receivedSizeRef.current / (1024 * 1024)) / elapsedSeconds;
           setSpeed(currentSpeedMBps.toFixed(2));
         } catch (err) {
+          transferFailedRef.current = true;
           setStatus('Decryption Error! Security hash mismatch.');
           playErrorBeep();
           console.error(err);
@@ -242,8 +244,10 @@ export default function Room() {
       hash: fileHash 
     }));
 
-    const chunkSize = 64 * 1024;
+    // Keep encrypted WebRTC messages comfortably below common browser limits.
+    const chunkSize = 16 * 1024;
     let offset = 0;
+    dc.bufferedAmountLowThreshold = 512 * 1024;
     startTimeRef.current = Date.now(); 
 
     const sendChunk = async () => {
@@ -279,6 +283,12 @@ export default function Room() {
 
   const finalizeDownload = async () => {
     setStatus('Verifying cryptographic SHA-256 integrity...');
+    if (receivedSizeRef.current !== fileMetaRef.current.size) {
+      playErrorBeep();
+      setStatus(`Error: Incomplete transfer (${receivedSizeRef.current}/${fileMetaRef.current.size} bytes).`);
+      return;
+    }
+
     const blob = new Blob(receivedBuffersRef.current);
     const arrayBuffer = await blob.arrayBuffer();
     const finalHash = await generateChunkHash(arrayBuffer);
