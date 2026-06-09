@@ -196,6 +196,13 @@ export default function Room() {
     dc.binaryType = 'arraybuffer';
     
     dc.onopen = () => {
+      if (!secretKey) {
+        setStatus('Decryption key missing from URL hash. Generate a fresh link.');
+        playErrorBeep();
+        dc.close();
+        return;
+      }
+
       setStatus('Connected securely! Encrypting data tunnel...');
       if (isSender) startSendingFile(dc);
     };
@@ -205,6 +212,9 @@ export default function Room() {
         const msg = JSON.parse(e.data);
         if (msg.type === 'metadata') {
           fileMetaRef.current = msg;
+          receivedBuffersRef.current = [];
+          receivedSizeRef.current = 0;
+          transferFailedRef.current = false;
           setStatus(`Receiving (Encrypted): ${msg.name}`);
           startTimeRef.current = Date.now(); 
         } else if (msg.type === 'eof') {
@@ -212,7 +222,8 @@ export default function Room() {
         }
       } else {
         try {
-          const decryptedChunk = await decryptData(e.data, secretKey);
+          const encryptedChunk = await normalizeBinaryMessage(e.data);
+          const decryptedChunk = await decryptData(encryptedChunk, secretKey);
           receivedBuffersRef.current.push(decryptedChunk);
           receivedSizeRef.current += decryptedChunk.byteLength;
           
@@ -230,6 +241,15 @@ export default function Room() {
         }
       }
     };
+  };
+
+  const normalizeBinaryMessage = async (data) => {
+    if (data instanceof ArrayBuffer) return data;
+    if (data instanceof Blob) return await data.arrayBuffer();
+    if (ArrayBuffer.isView(data)) {
+      return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    }
+    throw new Error(`Unsupported encrypted payload type: ${Object.prototype.toString.call(data)}`);
   };
 
   const startSendingFile = async (dc) => {
